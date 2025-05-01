@@ -1,5 +1,10 @@
 # Eden
 
+## Overview
+This is a new effort to put together yet another Elite Dangerous galactic information service.
+
+## How to start
+
 To start your Phoenix server:
 
   * Run `mix setup` to install and setup dependencies
