@@ -10,14 +10,44 @@ defmodule EDDNListener do
   end
 
   def handle_continue(:started, [socket] = state) do
-    process_message(socket)
+    receive_message(socket)
     {:noreply, state}
   end
 
   def handle_info({:received, content}, [socket] = state) do
-    IO.puts("RECEIVED: #{inspect(content)}")
-    process_message(socket)
+    [
+      fn -> create_system(content) end
+    ]
+    |> Task.async_stream(fn func -> func.() end)
+    |> Stream.run()
+
+    receive_message(socket)
     {:noreply, state}
+  end
+
+  defp write_to_file(content) do
+    File.touch!("eddn_msgs.txt")
+
+    File.write!("eddn_msgs.txt", "EDDN_MESSAGE: #{Jason.encode!(content, pretty: true)}\n", [
+      :append
+    ])
+  end
+
+  defp create_system(content) do
+    message = Map.get(content, "message")
+
+    case Map.get(message, "SystemAddress") do
+      nil ->
+        :noop
+
+      system_address ->
+        case Eden.Repo.get_by(Eden.Schemas.System, system_address: system_address) do
+          nil -> %Eden.Schemas.System{}
+          system -> system
+        end
+        |> Eden.Schemas.System.changeset(message)
+        |> Eden.Repo.insert_or_update()
+    end
   end
 
   defp setup_subscriber_socket() do
@@ -27,7 +57,7 @@ defmodule EDDNListener do
     socket
   end
 
-  defp process_message(socket) do
+  defp receive_message(socket) do
     {:ok, deflated_contents} = :chumak.recv(socket)
 
     z = :zlib.open()
