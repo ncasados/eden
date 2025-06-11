@@ -19,7 +19,7 @@ defmodule Eden.Schemas.System do
       |> get_system_address()
       |> get_system_name()
 
-    system
+    changeset = system
     |> cast(params, [
       :name,
       :system_address,
@@ -35,6 +35,12 @@ defmodule Eden.Schemas.System do
       :position_z
     ])
     |> unique_constraint([:system_address])
+
+    if changeset.valid? do
+      {:ok, changeset}
+    else
+      {:error, changeset}
+    end
   end
 
   defp get_system_name(params) do
