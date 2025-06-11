@@ -41,12 +41,14 @@ defmodule EDDNListener do
         :noop
 
       system_address ->
+        {:ok, changeset} =
         case Eden.Repo.get_by(Eden.Schemas.System, system_address: system_address) do
           nil -> %Eden.Schemas.System{}
           system -> system
         end
         |> Eden.Schemas.System.changeset(message)
-        |> Eden.Repo.insert_or_update()
+
+        Eden.Repo.insert_or_update(changeset)
     end
   end
 
